@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 DSA Problem Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.95);
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .difficulty-easy { color: #28a745; }
+        .difficulty-medium { color: #ffc107; }
+        .difficulty-hard { color: #dc3545; }
+        .status-not-solved { background: #f8f9fa; color: #6c757d; }
+        .status-solved { background: #d4edda; color: #155724; }
+        .status-revision { background: #fff3cd; color: #856404; }
+        .problem-card {
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .problem-card:hover {
+            transform: translateY(-5px);
+        }
+        .stats-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+        }
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-code me-2"></i>DSA Problem Tracker
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-item">
+                    <small class="text-white-50">Backend Status: <span id="backend-status" class="text-danger">Offline</span></small>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tasks fa-2x mb-2"></i>
+                        <h4 id="total-problems">0</h4>
+                        <small>Total Problems</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h4 id="solved-problems">0</h4>
+                        <small>Solved</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <h4 id="pending-problems">0</h4>
+                        <small>Pending</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-percentage fa-2x mb-2"></i>
+                        <h4 id="completion-rate">0%</h4>
+                        <small>Completion</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-white mb-0">
+                <i class="fas fa-list me-2"></i>My Problems
+            </h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProblemModal">
+                <i class="fas fa-plus me-2"></i>Add New Problem
+            </button>
+        </div>
+
+        <!-- Problems Grid -->
+        <div id="problems-container" class="row">
+            <!-- Problems will be loaded here -->
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading-spinner" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-white mt-2">Loading problems...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="text-center py-5">
+            <i class="fas fa-inbox fa-4x text-white-50 mb-3"></i>
+            <h4 class="text-white">No problems yet!</h4>
+            <p class="text-white-50">Start by adding your first DSA problem</p>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProblemModal">
+                <i class="fas fa-plus me-2"></i>Add Your First Problem
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Problem Modal -->
+    <div class="modal fade" id="addProblemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus me-2"></i>Add New Problem
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-problem-form">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <input type="text" class="form-control" id="problem-title" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Topic *</label>
+                                    <input type="text" class="form-control" id="problem-topic" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Difficulty *</label>
+                                    <select class="form-control" id="problem-difficulty" required>
+                                        <option value="">Select Difficulty</option>
+                                        <option value="EASY">Easy</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HARD">Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Status *</label>
+                                    <select class="form-control" id="problem-status" required>
+                                        <option value="">Select Status</option>
+                                        <option value="NOT_SOLVED">Not Solved</option>
+                                        <option value="SOLVED">Solved</option>
+                                        <option value="REVISION">Needs Revision</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="problem-description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">LeetCode Link</label>
+                            <input type="url" class="form-control" id="problem-link">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Solution Code</label>
+                            <textarea class="form-control" id="problem-code" rows="5" placeholder="Paste your solution code here..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" id="problem-notes" rows="3" placeholder="Personal notes and insights..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Common Mistakes</label>
+                            <textarea class="form-control" id="problem-mistakes" rows="3" placeholder="Things to avoid..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-problem-btn">
+                        <i class="fas fa-save me-2"></i>Save Problem
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Problem Modal -->
+    <div class="modal fade" id="editProblemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>Edit Problem
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-problem-form">
+                        <input type="hidden" id="edit-problem-id">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Title *</label>
+                                    <input type="text" class="form-control" id="edit-problem-title" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Topic *</label>
+                                    <input type="text" class="form-control" id="edit-problem-topic" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Difficulty *</label>
+                                    <select class="form-control" id="edit-problem-difficulty" required>
+                                        <option value="EASY">Easy</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HARD">Hard</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Status *</label>
+                                    <select class="form-control" id="edit-problem-status" required>
+                                        <option value="NOT_SOLVED">Not Solved</option>
+                                        <option value="SOLVED">Solved</option>
+                                        <option value="REVISION">Needs Revision</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="edit-problem-description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">LeetCode Link</label>
+                            <input type="url" class="form-control" id="edit-problem-link">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Solution Code</label>
+                            <textarea class="form-control" id="edit-problem-code" rows="5"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" id="edit-problem-notes" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Common Mistakes</label>
+                            <textarea class="form-control" id="edit-problem-mistakes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="update-problem-btn">
+                        <i class="fas fa-save me-2"></i>Update Problem
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Problem Modal -->
+    <div class="modal fade" id="viewProblemModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i><span id="view-problem-title"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <h6><i class="fas fa-file-alt me-2"></i>Description</h6>
+                                <p id="view-problem-description" class="text-muted">No description provided</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-code me-2"></i>Solution Code</h6>
+                                <pre id="view-problem-code" class="bg-light p-3 rounded" style="font-size: 0.9em;">No code provided</pre>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-sticky-note me-2"></i>Notes</h6>
+                                <p id="view-problem-notes" class="text-muted">No notes provided</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-exclamation-triangle me-2"></i>Common Mistakes</h6>
+                                <p id="view-problem-mistakes" class="text-muted">No mistakes noted</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Problem Details</h6>
+                                    <p class="mb-2"><strong>Topic:</strong> <span id="view-problem-topic"></span></p>
+                                    <p class="mb-2"><strong>Difficulty:</strong> <span id="view-problem-difficulty"></span></p>
+                                    <p class="mb-2"><strong>Status:</strong> <span id="view-problem-status"></span></p>
+                                    <p class="mb-2"><strong>Link:</strong> <a id="view-problem-link" href="#" target="_blank">View on LeetCode</a></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning" id="edit-from-view-btn">
+                        <i class="fas fa-edit me-2"></i>Edit Problem
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // API Base URL
+        const API_BASE = 'http://localhost:8080';
+
+        // DOM Elements
+        const problemsContainer = document.getElementById('problems-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const emptyState = document.getElementById('empty-state');
+        const backendStatus = document.getElementById('backend-status');
+
+        // Statistics Elements
+        const totalProblemsEl = document.getElementById('total-problems');
+        const solvedProblemsEl = document.getElementById('solved-problems');
+        const pendingProblemsEl = document.getElementById('pending-problems');
+        const completionRateEl = document.getElementById('completion-rate');
+
+        // Check backend status
+        async function checkBackendStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/problems`);
+                if (response.ok) {
+                    backendStatus.textContent = 'Online';
+                    backendStatus.className = 'text-success';
+                    return true;
+                }
+            } catch (error) {
+                console.log('Backend not available:', error);
+            }
+            backendStatus.textContent = 'Offline';
+            backendStatus.className = 'text-danger';
+            return false;
+        }
+
+        // Load all problems
+        async function loadProblems() {
+            if (!(await checkBackendStatus())) {
+                showEmptyState();
+                return;
+            }
+
+            showLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/problems`);
+                const problems = await response.json();
+
+                updateStatistics(problems);
+                renderProblems(problems);
+                hideLoading();
+
+                if (problems.length === 0) {
+                    showEmptyState();
+                } else {
+                    hideEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading problems:', error);
+                showEmptyState();
+                hideLoading();
+            }
+        }
+
+        // Update statistics
+        function updateStatistics(problems) {
+            const total = problems.length;
+            const solved = problems.filter(p => p.status === 'SOLVED').length;
+            const pending = total - solved;
+            const completionRate = total > 0 ? Math.round((solved / total) * 100) : 0;
+
+            totalProblemsEl.textContent = total;
+            solvedProblemsEl.textContent = solved;
+            pendingProblemsEl.textContent = pending;
+            completionRateEl.textContent = `${completionRate}%`;
+        }
+
+        // Render problems grid
+        function renderProblems(problems) {
+            problemsContainer.innerHTML = '';
+
+            problems.forEach(problem => {
+                const problemCard = createProblemCard(problem);
+                problemsContainer.appendChild(problemCard);
+            });
+        }
+
+        // Create problem card
+        function createProblemCard(problem) {
+            const col = document.createElement('div');
+            col.className = 'col-md-6 col-lg-4 mb-4';
+
+            const difficultyClass = `difficulty-${problem.difficulty.toLowerCase()}`;
+            const statusClass = `status-${problem.status.toLowerCase().replace('_', '-')}`;
+
+            col.innerHTML = `
+                <div class="card problem-card h-100" data-id="${problem.id}">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="card-title mb-0 text-truncate" title="${problem.title}">
+                                ${problem.title}
+                            </h6>
+                            <span class="badge ${difficultyClass} ms-2">
+                                <i class="fas fa-star"></i> ${problem.difficulty}
+                            </span>
+                        </div>
+
+                        <p class="text-muted small mb-2">
+                            <i class="fas fa-tag me-1"></i>${problem.topic}
+                        </p>
+
+                        <div class="mb-3">
+                            <span class="badge ${statusClass} w-100">
+                                <i class="fas fa-circle me-1"></i>${formatStatus(problem.status)}
+                            </span>
+                        </div>
+
+                        <div class="mt-auto">
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-outline-primary btn-sm view-btn" data-id="${problem.id}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm edit-btn" data-id="${problem.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-sm delete-btn" data-id="${problem.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add event listeners
+            const viewBtn = col.querySelector('.view-btn');
+            const editBtn = col.querySelector('.edit-btn');
+            const deleteBtn = col.querySelector('.delete-btn');
+
+            viewBtn.addEventListener('click', () => viewProblem(problem.id));
+            editBtn.addEventListener('click', () => editProblem(problem.id));
+            deleteBtn.addEventListener('click', () => deleteProblem(problem.id));
+
+            return col;
+        }
+
+        // Format status for display
+        function formatStatus(status) {
+            const statusMap = {
+                'NOT_SOLVED': 'Not Solved',
+                'SOLVED': 'Solved',
+                'REVISION': 'Needs Revision'
+            };
+            return statusMap[status] || status;
+        }
+
+        // Show loading spinner
+        function showLoading() {
+            loadingSpinner.style.display = 'block';
+            problemsContainer.style.display = 'none';
+        }
+
+        // Hide loading spinner
+        function hideLoading() {
+            loadingSpinner.style.display = 'none';
+            problemsContainer.style.display = 'block';
+        }
+
+        // Show empty state
+        function showEmptyState() {
+            emptyState.style.display = 'block';
+            problemsContainer.style.display = 'none';
+            loadingSpinner.style.display = 'none';
+        }
+
+        // Hide empty state
+        function hideEmptyState() {
+            emptyState.style.display = 'none';
+            problemsContainer.style.display = 'block';
+        }
+
+        // Add new problem
+        async function addProblem() {
+            const problem = {
+                title: document.getElementById('problem-title').value,
+                topic: document.getElementById('problem-topic').value,
+                difficulty: document.getElementById('problem-difficulty').value,
+                status: document.getElementById('problem-status').value,
+                description: document.getElementById('problem-description').value,
+                link: document.getElementById('problem-link').value,
+                code: document.getElementById('problem-code').value,
+                notes: document.getElementById('problem-notes').value,
+                mistakes: document.getElementById('problem-mistakes').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/problems`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(problem)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('addProblemModal')).hide();
+                    document.getElementById('add-problem-form').reset();
+                    loadProblems();
+                    showToast('Problem added successfully!', 'success');
+                } else {
+                    showToast('Failed to add problem', 'error');
+                }
+            } catch (error) {
+                console.error('Error adding problem:', error);
+                showToast('Error adding problem', 'error');
+            }
+        }
+
+        // View problem details
+        async function viewProblem(id) {
+            try {
+                const response = await fetch(`${API_BASE}/problems/${id}`);
+                const problem = await response.json();
+
+                document.getElementById('view-problem-title').textContent = problem.title;
+                document.getElementById('view-problem-description').textContent = problem.description || 'No description provided';
+                document.getElementById('view-problem-code').textContent = problem.code || 'No code provided';
+                document.getElementById('view-problem-notes').textContent = problem.notes || 'No notes provided';
+                document.getElementById('view-problem-mistakes').textContent = problem.mistakes || 'No mistakes noted';
+                document.getElementById('view-problem-topic').textContent = problem.topic;
+                document.getElementById('view-problem-difficulty').textContent = problem.difficulty;
+                document.getElementById('view-problem-status').textContent = formatStatus(problem.status);
+
+                const linkEl = document.getElementById('view-problem-link');
+                if (problem.link) {
+                    linkEl.href = problem.link;
+                    linkEl.style.display = 'inline';
+                } else {
+                    linkEl.style.display = 'none';
+                }
+
+                // Store problem data for edit button
+                document.getElementById('edit-from-view-btn').onclick = () => {
+                    bootstrap.Modal.getInstance(document.getElementById('viewProblemModal')).hide();
+                    editProblem(id);
+                };
+
+                new bootstrap.Modal(document.getElementById('viewProblemModal')).show();
+            } catch (error) {
+                console.error('Error viewing problem:', error);
+                showToast('Error loading problem details', 'error');
+            }
+        }
+
+        // Edit problem
+        async function editProblem(id) {
+            try {
+                const response = await fetch(`${API_BASE}/problems/${id}`);
+                const problem = await response.json();
+
+                document.getElementById('edit-problem-id').value = problem.id;
+                document.getElementById('edit-problem-title').value = problem.title;
+                document.getElementById('edit-problem-topic').value = problem.topic;
+                document.getElementById('edit-problem-difficulty').value = problem.difficulty;
+                document.getElementById('edit-problem-status').value = problem.status;
+                document.getElementById('edit-problem-description').value = problem.description || '';
+                document.getElementById('edit-problem-link').value = problem.link || '';
+                document.getElementById('edit-problem-code').value = problem.code || '';
+                document.getElementById('edit-problem-notes').value = problem.notes || '';
+                document.getElementById('edit-problem-mistakes').value = problem.mistakes || '';
+
+                new bootstrap.Modal(document.getElementById('editProblemModal')).show();
+            } catch (error) {
+                console.error('Error loading problem for edit:', error);
+                showToast('Error loading problem', 'error');
+            }
+        }
+
+        // Update problem
+        async function updateProblem() {
+            const id = document.getElementById('edit-problem-id').value;
+            const problem = {
+                title: document.getElementById('edit-problem-title').value,
+                topic: document.getElementById('edit-problem-topic').value,
+                difficulty: document.getElementById('edit-problem-difficulty').value,
+                status: document.getElementById('edit-problem-status').value,
+                description: document.getElementById('edit-problem-description').value,
+                link: document.getElementById('edit-problem-link').value,
+                code: document.getElementById('edit-problem-code').value,
+                notes: document.getElementById('edit-problem-notes').value,
+                mistakes: document.getElementById('edit-problem-mistakes').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/problems/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(problem)
+                });
+
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('editProblemModal')).hide();
+                    loadProblems();
+                    showToast('Problem updated successfully!', 'success');
+                } else {
+                    showToast('Failed to update problem', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating problem:', error);
+                showToast('Error updating problem', 'error');
+            }
+        }
+
+        // Delete problem
+        async function deleteProblem(id) {
+            if (!confirm('Are you sure you want to delete this problem?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/problems/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadProblems();
+                    showToast('Problem deleted successfully!', 'success');
+                } else {
+                    showToast('Failed to delete problem', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting problem:', error);
+                showToast('Error deleting problem', 'error');
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type) {
+            // Simple alert for now - you can enhance this with a proper toast library
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const toast = document.createElement('div');
+            toast.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+            toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            toast.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // Event listeners
+        document.getElementById('save-problem-btn').addEventListener('click', addProblem);
+        document.getElementById('update-problem-btn').addEventListener('click', updateProblem);
+
+        // Load problems on page load
+        document.addEventListener('DOMContentLoaded', loadProblems);
+
+        // Refresh data every 30 seconds
+        setInterval(loadProblems, 30000);
+    </script>
+</body>
+</html>
